@@ -1,6 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 ROOTFSURL="http://opensource.nextthing.co/chippian/mlc-nand-testing-rootfs/server-rootfs.tar.gz"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Build uboot
 if [ ! -d CHIP-u-boot ]; then
@@ -23,7 +24,7 @@ if [ ! -d CHIP-linux ]; then
 	git checkout -b nextthing/4.4/next-mlc origin/nextthing/4.4/next-mlc
 	touch .scmversion
 	cd ..
-	cp config-4.4.13-ntc-nand-testing CHIP-linux/.config
+	cp $DIR/config-4.4.13-ntc-nand-testing CHIP-linux/.config
 fi
 
 cd CHIP-linux
@@ -55,7 +56,7 @@ cp CHIP-linux/arch/arm/boot/dts/sun5i-r8-chip.dts images/rootfs/boot/
 cp CHIP-linux/arch/arm/boot/zImage images/rootfs/boot/
 
 CHIP-mtd-utils/mkfs.ubifs/mkfs.ubifs -d images/rootfs -m 16384 -e 0x1F8000 -c 2048 -o images/rootfs.ubifs
-CHIP-mtd-utils/ubi-utils/ubinize -o images/chip.ubi -p 0x400000 -m 0x4000 -M dist3 ubinize.cfg
+CHIP-mtd-utils/ubi-utils/ubinize -o images/chip.ubi -p 0x400000 -m 0x4000 -M dist3 $DIR/ubinize.cfg
 
 dd if=CHIP-u-boot/u-boot-dtb.bin of=images/uboot.bin bs=4M conv=sync
 
