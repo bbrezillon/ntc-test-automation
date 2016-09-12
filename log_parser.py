@@ -18,6 +18,8 @@ parser.add_argument('FILE', help='path to the log to parse')
 args = parser.parse_args()
 
 server = smtplib.SMTP('', '')
+server.ehlo()
+server.starttls()
 server.login('', '')
 
 recipients = [""]
