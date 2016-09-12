@@ -5,12 +5,14 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Build uboot
 if [ ! -d CHIP-u-boot ]; then
+	echo "No U-Boot repo found, cloning repo..."
 	git clone https://github.com/NextThingCo/CHIP-u-boot.git
 	cd CHIP-u-boot
 	git checkout -b nextthing/2016.01/next-mlc origin/nextthing/2016.01/next-mlc
 	cd ..
 fi
 
+echo "Building U-Boot..."
 cd CHIP-u-boot
 git pull
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- CHIP_defconfig
@@ -19,14 +21,17 @@ cd ..
 
 # Build Linux
 if [ ! -d CHIP-linux ]; then
+	echo "No kernel repo found, cloning repo..."
 	git clone https://github.com/NextThingCo/CHIP-linux.git
 	cd CHIP-linux
 	git checkout -b nextthing/4.4/next-mlc origin/nextthing/4.4/next-mlc
 	touch .scmversion
 	cd ..
+	echo "Copying .config..."
 	cp $DIR/config-4.4.13-ntc-nand-testing CHIP-linux/.config
 fi
 
+echo "Building kernel..."
 cd CHIP-linux
 git pull
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc)
@@ -34,20 +39,24 @@ cd ..
 
 # Build MTD utils
 if [ ! -d CHIP-mtd-utils ]; then
+	echo "No mtd-utils found, cloning repo..."
 	git clone https://github.com/NextThingCo/CHIP-mtd-utils.git
 	cd CHIP-mtd-utils
 	git checkout -b nextthing/1.5.2/next-mlc origin/nextthing/1.5.2/next-mlc
 	cd ..
 fi
 
+echo "Building mtd-utils..."
 cd CHIP-mtd-utils
 git pull
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j$(nproc)
 cd ..
 
 # Download rootfs
+echo "Downloading rootfs..."
 curl -o rootfs.tar $ROOTFSURL
 
+echo "Creating images..."
 rm -rf images
 mkdir -p images
 fakeroot tar -xf rootfs.tar -C images/
