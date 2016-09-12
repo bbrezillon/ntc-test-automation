@@ -20,6 +20,9 @@ for device in sys.argv[1:]:
 
 print "Checking pids file..."
 if os.path.exists("pids"):
+	print "Creating archives directory..."
+	directory = str(datetime.datetime.today()).replace(":", "-").replace(" ", "_")
+	os.spawnvp(os.P_WAIT, 'mkdir', ("mkdir %s" % directory).split())
 	print "Killing all minicom, random-powercut and log_parser instances..."
 	with open("pids", "r") as pid_file:
 		i = 0
@@ -28,9 +31,12 @@ if os.path.exists("pids"):
 			if not line:
 				break
 			if i % 3 == 1:
-				os.spawnvp(os.P_WAIT, 'screen', ("screen -X -S serial%s quit" % line).split())
-				print "Killing screen serial%s. Please wait..." % line
-				time.sleep(5)
+				if not os.spawnvp(os.P_WAIT, 'screen', ("screen -X -S serial%s quit" % line).split()):
+					print "Killing screen serial%s. Please wait..." % line
+					time.sleep(5)
+
+				print "Saving %s.log..." % line
+				os.spawnvp(os.P_WAIT, 'mv', ("mv %s.log %s/" % (line, directory)).split())
 				i += 1
 				continue
 			i += 1
@@ -76,11 +82,6 @@ for device in sys.argv[1:]:
 	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "flash UBI images/chip.ubi.sparse").split())
 	serial.close()
 
-	# archive log in directory named after _today_time_
-	print "Archiving and cleaning logs for device %s..." % device
-	directory = str(datetime.datetime.today()).replace(":", "-").replace(" ", "_")
-	os.spawnvp(os.P_WAIT, 'mkdir', ("mkdir %s" % directory).split())
-	os.spawnvp(os.P_WAIT, 'mv', ("mv %s.log %s/" % (dev[2], directory)).split())
 	# plug off board
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
 
