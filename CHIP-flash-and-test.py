@@ -80,9 +80,7 @@ for device in sys.argv[1:]:
 	print "Archiving and cleaning logs for device %s..." % device
 	directory = str(datetime.datetime.today()).replace(":", "-").replace(" ", "_")
 	os.spawnvp(os.P_WAIT, 'mkdir', ("mkdir %s" % directory).split())
-	os.spawnvp(os.P_WAIT, 'cp', ("cp %s.log %s/" % (dev[2], directory)).split())
-	# clean archive log
-	os.spawnvp(os.P_WAIT, 'echo', ("echo '' > %s.log" % dev[2]).split())
+	os.spawnvp(os.P_WAIT, 'mv', ("mv %s.log %s/" % (dev[2], directory)).split())
 	# plug off board
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
 
