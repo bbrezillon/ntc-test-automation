@@ -64,7 +64,7 @@ fakeroot tar -xf rootfs.tar -C images/
 cp CHIP-linux/arch/arm/boot/dts/sun5i-r8-chip.dts images/rootfs/boot/
 cp CHIP-linux/arch/arm/boot/zImage images/rootfs/boot/
 
-CHIP-mtd-utils/mkfs.ubifs/mkfs.ubifs -d images/rootfs -m 16384 -e 0x1F8000 -c 4096 -o images/rootfs.ubifs
+fakeroot CHIP-mtd-utils/mkfs.ubifs/mkfs.ubifs -d images/rootfs -m 16384 -e 0x1F8000 -c 4096 -o images/rootfs.ubifs
 CHIP-mtd-utils/ubi-utils/ubinize -o images/chip.ubi -p 0x400000 -m 0x4000 -M dist3 $DIR/ubinize.cfg
 
 dd if=CHIP-u-boot/u-boot-dtb.bin of=images/uboot.bin bs=4M conv=sync
