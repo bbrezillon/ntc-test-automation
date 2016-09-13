@@ -66,6 +66,8 @@ cp CHIP-linux/arch/arm/boot/zImage images/rootfs/boot/
 
 git clone https://chipnandtester:chippydoesntlikecheapandshitty@github.com/NextThingCo/CHIP-nandTests.git images/rootfs/root/CHIP-nandTests
 cp images/rootfs/root/CHIP-nandTests/bootstrap.service images/rootfs/etc/systemd/system/
+mkdir -p images/rootfs/etc/systemd/system/network-online.target.wants
+ln -s /etc/systemd/system/bootstrap.service images/rootfs/etc/systemd/system/network-online.target.wants/bootstrap.service
 
 fakeroot CHIP-mtd-utils/mkfs.ubifs/mkfs.ubifs -d images/rootfs -m 16384 -e 0x1F8000 -c 4096 -o images/rootfs.ubifs
 CHIP-mtd-utils/ubi-utils/ubinize -o images/chip.ubi -p 0x400000 -m 0x4000 -M dist3 $DIR/ubinize.cfg
