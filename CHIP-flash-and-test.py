@@ -14,8 +14,8 @@ power_cmd = "command_relay.py %s %d " % (RELAY_IP, RELAY_PORT)
 fastboot_cmd = "fastboot -i 0x1f3a "
 
 for device in sys.argv[1:]:
-	if len(device.split(":")) != 3:
-		print "ARGS should be of kind: 'console:relay_port:log_name'"
+	if len(device.split(":")) not in [3,4]:
+		print "ARGS should be of kind: 'console:relay_port:log_name[:random_powercut?]'"
 		sys.exit(-1)
 
 print "Checking pids file..."
@@ -93,6 +93,9 @@ with open("pids", "w") as pid_file:
 		pid_file.write("%d\n" % pid)
 		pid = os.spawnvp(os.P_NOWAIT, 'screen', ("screen -md -S serial%s minicom -D %s -b 115200 -C %s.log" % (dev[2], dev[0], dev[2])).split())
 		pid_file.write("%s\n" % dev[2])
-		os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
-		pid = os.spawnvp(os.P_NOWAIT, 'random-powercut.sh', ("random-powercut.sh %s %s %d" % (dev[1], RELAY_IP, RELAY_PORT)).split())
-		pid_file.write("%d\n" % pid)
+		os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % dev[1]).split()) 
+		if len(dev) == 4 and dev[3] == 'no':
+			pid_file.write("No random-powercut\n")
+		else:
+			pid = os.spawnvp(os.P_NOWAIT, 'random-powercut.sh', ("random-powercut.sh %s %s %d" % (dev[1], RELAY_IP, RELAY_PORT)).split())
+			pid_file.write("%d\n" % pid)
