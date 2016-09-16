@@ -2,6 +2,13 @@
 
 ROOTFSURL="http://opensource.nextthing.co/chippian/mlc-nand-testing-rootfs/server-rootfs.tar.gz"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+OUTPUT_DIR=$1
+
+if [ ! $OUTPUT_DIR ]; then
+	OUTPUT_DIR=$DIR
+fi
+
+cd $OUTPUT_DIR
 
 # Build uboot
 if [ ! -d CHIP-u-boot ]; then
