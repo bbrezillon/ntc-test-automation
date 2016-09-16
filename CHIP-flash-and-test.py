@@ -89,7 +89,7 @@ print "Creating all minicom, random-powercut and log_parser instances..."
 with open("pids", "w") as pid_file:
 	for device in sys.argv[1:]:
 		dev = device.split(":")
-		pid = os.spawnvp(os.P_NOWAIT, 'log_parser.py', ("log_parser.py %s.log" % dev[2]).split())
+		pid = os.spawnvp(os.P_NOWAIT, 'log_parser.py', ("log_parser.py %s.log %s %s %d" % (dev[2], dev[1], RELAY_IP, RELAY_PORT)).split())
 		pid_file.write("%d\n" % pid)
 		pid = os.spawnvp(os.P_NOWAIT, 'screen', ("screen -md -S serial%s minicom -D %s -b 115200 -C %s.log" % (dev[2], dev[0], dev[2])).split())
 		pid_file.write("%s\n" % dev[2])
