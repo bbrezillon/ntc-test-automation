@@ -35,7 +35,8 @@ def send_mail(line, filename):
 #Timeout in milli seconds before board is declared dead
 timeout = 60 * 1000 * 10
 
-matching_templates = ['ubi.*error']
+reboot_templates = ['send stop command failed']
+matching_templates = ['UBI.*err', 'Oops']
 matching_res = []
 for matching_template in matching_templates:
 	matching_res.append(re.compile(matching_template))
