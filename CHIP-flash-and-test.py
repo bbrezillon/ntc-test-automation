@@ -62,11 +62,13 @@ for device in sys.argv[1:]:
 	print "Entering device %s bootloader..." % device
 	dev = device.split(":")
 	# Enter fastboot mode on board
-	serial = pexpect.spawn("picocom -b 115200 %s" % dev[0])
+	serial = pexpect.spawn("picocom -b 115200 %s" % dev[0], timeout=60)
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % dev[1]).split()) 
 	serial.expect(["Hit any key to stop autoboot"])
 	serial.sendline('b')
+	serial.expect(["=>"])
+	serial.sendline("nand scrub.part -y UBI")
 	serial.expect(["=>"])
 	serial.sendline("fastboot 0")
 
@@ -76,8 +78,9 @@ for device in sys.argv[1:]:
 	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "erase uboot").split())
 	print "Writing uboot partition..."
 	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "flash uboot images/uboot.bin").split())
-	print "Erasing UBI partition..."
-	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "erase UBI").split())
+	# We don't need to erase the UBI partition (it has been scrubbed earlier)
+	#print "Erasing UBI partition..."
+	#os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "erase UBI").split())
 	print "Writing UBI partition..."
 	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "flash UBI images/chip.ubi.sparse").split())
 	serial.close()
