@@ -7,6 +7,7 @@ import select
 import re
 import smtplib
 import os
+import time
 
 from email.mime.text import MIMEText
 
@@ -31,18 +32,26 @@ server.login('', '')
 recipients = [""]
 me = ""
 
-def send_mail(line, filename, reboot=False):
-	content = "An error occured on device %s:\n%s" % (filename, line)
+def send_mail(status, filename, line="", reboot=False):
+	content = "A " + status + " occured on device %s:\n%s" % (filename, line)
 	if reboot:
 		content += "\nThe device is being rebooted."
 	msg = MIMEText(content)
-	msg['Subject'] = "Error on device %s" % filename
+	msg['Subject'] = status + " on device %s" % filename
 	msg['To'] = ", ".join(recipients)
 	msg['From'] = me
 	server.sendmail(me, recipients, msg.as_string())
 
-#Timeout in milli seconds before board is declared dead
+def timeout_detected(filename):
+	if time.mktime(time.gmtime()) >= freeze_timeout + last_line:
+		send_mail("timeout of %ds" % freeze_timeout, filename)
+
+#Timeout in milli seconds before serial is considered frozen
 timeout = 60 * 1000 * 10
+
+#Timeout in seconds before board is declared crashed
+freeze_timeout = 60 * 30
+last_line = time.mktime(time.gmtime())
 
 reboot_templates = ['send stop command failed']
 matching_templates = ['UBI.*err', 'Oops']
@@ -54,27 +63,27 @@ for matching_template in matching_templates:
 for reboot_template in reboot_templates:
 	reboot_res.append(re.compile(reboot_template))
 
-serial = pexpect.spawn("tail -F %s" % args.FILE)
+serial = pexpect.spawn("tail -F %s" % args.FILE, timeout=freeze_timeout)
 poll = select.poll()
 poll.register(serial, select.POLLIN)
 
 while True:
 	poll_ok = poll.poll(timeout)
 	if not poll_ok:
-		print "Timeout detected for log %s" % args.FILE
-		#what to do for timeout?
+		timeout_detected(args.FILE)
 		continue
 
 	try:
 		line = serial.readline()
 	except pexpect.TIMEOUT:
-		print "Timeout detected for log %s" % args.FILE
-		#what to do for timeout?
+		timeout_detected(args.FILE)
 		continue
+
+	last_line = time.mktime(time.gmtime())
 	for matching_re in matching_res:
 		match = matching_re.search(line)
 		if match:
-			send_mail(line, args.FILE)
+			send_mail(args.FILE, line)
 			break
 	if match:
 		continue
@@ -83,7 +92,7 @@ while True:
 		if match:
 			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " off").split())
 			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " on").split())
-			send_mail(line, args.FILE, True)
+			send_mail(args.FILE, line, True)
 			break
 
 
