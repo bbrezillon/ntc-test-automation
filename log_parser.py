@@ -8,6 +8,7 @@ import re
 import smtplib
 import os
 import time
+import smtp_credentials
 
 from email.mime.text import MIMEText
 
@@ -24,13 +25,13 @@ args = parser.parse_args()
 
 power_cmd = "command_relay.py %s %d %d" % (args.RELAY_IP, args.RELAY_PORT, args.RELAY)
 
-server = smtplib.SMTP('', '')
+server = smtplib.SMTP(smtp_credentials.server, smtp_credentials.port)
 server.ehlo()
 server.starttls()
-server.login('', '')
+server.login(smtp_credentials.login, smtp_credentials.password)
 
-recipients = [""]
-me = ""
+recipients = smtp_credentials.recipients
+me = smtp_credentials.mail
 
 def send_mail(status, filename, line="", reboot=False):
 	content = "A " + status + " occured on device %s:\n%s" % (filename, line)

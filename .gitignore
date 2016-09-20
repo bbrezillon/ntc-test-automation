@@ -1,0 +1,8 @@
+CHIP-linux
+CHIP-mtd-utils
+CHIP-u-boot
+images
+pids
+rootfs.tar
+*.log
+smtp_credentials.py
