@@ -7,16 +7,48 @@ import datetime
 import sys
 import psutil
 import time
+import argparse
+from ConfigParser import ConfigParser
+
+parser = argparse.ArgumentParser(description="Images builder and flasher for CHIPs")
+parser.add_argument("-c", "--conf-file", type=argparse.FileType("r"), default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "boards.conf"))
 
 RELAY_IP = "192.168.1.210"
 RELAY_PORT = 17494
 power_cmd = "command_relay.py %s %d " % (RELAY_IP, RELAY_PORT)
 fastboot_cmd = "fastboot -i 0x1f3a "
 
-for device in sys.argv[1:]:
-	if len(device.split(":")) not in [3,4]:
-		print "ARGS should be of kind: 'console:relay_port:log_name[:random_powercut?]'"
+args = parser.parse_args()
+
+config_parser = ConfigParser()
+config_parser.readfp(args.conf_file)
+
+class Device(object):
+	def __init__(self, name, console, relay, random_powercuts):
+		self.name = name
+		self.console = console
+		self.relay = relay
+		self.random_powercuts = random_powercuts
+
+devices = []
+
+for section in config_parser.sections():
+	name = section
+	if config_parser.has_option(section, "console"):
+		console = config_parser.get(section, "console")
+	else:
+		print "%s must have a `console` setting"
 		sys.exit(-1)
+	if config_parser.has_option(section, "relay"):
+		relay = config_parser.getint(section, "relay")
+	else:
+		print "%s must have a `relay` setting"
+		sys.exit(-1)
+	if config_parser.has_option(section, "random-powercuts"):
+		random_powercuts = config_parser.getboolean(section, "random-powercuts")
+	else:
+		random_powercuts = True
+	devices.append(Device(name, console, relay, random_powercuts))
 
 print "Checking pids file..."
 if os.path.exists("pids"):
@@ -58,13 +90,12 @@ else:
 print "Creating images..."
 os.spawnlp(os.P_WAIT, 'create-images.sh', 'create-images.sh')
 
-for device in sys.argv[1:]:
-	print "Entering device %s bootloader..." % device
-	dev = device.split(":")
+for device in devices:
+	print "Entering device %s bootloader..." % device.name
 	# Enter fastboot mode on board
-	serial = pexpect.spawn("picocom -b 115200 %s" % dev[0], timeout=60)
-	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
-	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % dev[1]).split()) 
+	serial = pexpect.spawn("picocom -b 115200 %s" % device.console, timeout=60)
+	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % device.relay).split()) 
+	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % device.relay).split()) 
 	serial.expect(["Hit any key to stop autoboot"])
 	serial.sendline('b')
 	serial.expect(["=>"])
@@ -73,7 +104,7 @@ for device in sys.argv[1:]:
 	serial.sendline("fastboot 0")
 
 	# Flash with fastboot
-	print "Flashing device %s..." % device
+	print "Flashing device %s..." % device.name
 	print "Erasing uboot partition..."
 	os.spawnvp(os.P_WAIT, 'fastboot', (fastboot_cmd + "erase uboot").split())
 	print "Writing uboot partition..."
@@ -86,19 +117,18 @@ for device in sys.argv[1:]:
 	serial.close()
 
 	# plug off board
-	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % dev[1]).split()) 
+	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % device.relay).split()) 
 
 print "Creating all minicom, random-powercut and log_parser instances..."
 with open("pids", "w") as pid_file:
-	for device in sys.argv[1:]:
-		dev = device.split(":")
-		pid = os.spawnvp(os.P_NOWAIT, 'log_parser.py', ("log_parser.py %s.log %s %s %d" % (dev[2], dev[1], RELAY_IP, RELAY_PORT)).split())
+	for device in devices:
+		pid = os.spawnvp(os.P_NOWAIT, 'log_parser.py', ("log_parser.py %s.log %s %s %d" % (device.name, device.relay, RELAY_IP, RELAY_PORT)).split())
 		pid_file.write("%d\n" % pid)
-		pid = os.spawnvp(os.P_NOWAIT, 'screen', ("screen -md -S serial%s minicom -D %s -b 115200 -C %s.log" % (dev[2], dev[0], dev[2])).split())
-		pid_file.write("%s\n" % dev[2])
-		os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % dev[1]).split()) 
-		if len(dev) == 4 and dev[3] == 'no':
+		pid = os.spawnvp(os.P_NOWAIT, 'screen', ("screen -md -S serial%s minicom -D %s -b 115200 -C %s.log" % (device.name, device.console, device.name)).split())
+		pid_file.write("%s\n" % device.name)
+		os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % device.relay).split()) 
+		if not device.random_powercuts:
 			pid_file.write("No random-powercut\n")
 		else:
-			pid = os.spawnvp(os.P_NOWAIT, 'random-powercut.sh', ("random-powercut.sh %s %s %d" % (dev[1], RELAY_IP, RELAY_PORT)).split())
+			pid = os.spawnvp(os.P_NOWAIT, 'random-powercut.sh', ("random-powercut.sh %s %s %d" % (device.relay, RELAY_IP, RELAY_PORT)).split())
 			pid_file.write("%d\n" % pid)
