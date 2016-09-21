@@ -57,27 +57,20 @@ if os.path.exists("pids"):
 	os.spawnvp(os.P_WAIT, 'mkdir', ("mkdir %s" % directory).split())
 	print "Killing all minicom, random-powercut and log_parser instances..."
 	with open("pids", "r") as pid_file:
-		i = 0
 		while True:
 			line = pid_file.readline().strip()
 			if not line:
 				break
-			if i % 3 == 1:
+			try:
+				pid = int(line)
+			except ValueError:
 				if not os.spawnvp(os.P_WAIT, 'screen', ("screen -X -S serial%s quit" % line).split()):
 					print "Killing screen serial%s. Please wait..." % line
 					time.sleep(5)
 
 				print "Saving %s.log..." % line
 				os.spawnvp(os.P_WAIT, 'mv', ("mv %s.log %s/" % (line, directory)).split())
-				i += 1
 				continue
-			i += 1
-			try:
-				pid = int(line)
-			except ValueError:
-				continue
-			if not pid:
-				break
 			try:
 				psutil.Process(pid).kill()
 				print "pid %d killed" % pid
@@ -127,8 +120,6 @@ with open("pids", "w") as pid_file:
 		pid = os.spawnvp(os.P_NOWAIT, 'screen', ("screen -md -S serial%s minicom -D %s -b 115200 -C %s.log" % (device.name, device.console, device.name)).split())
 		pid_file.write("%s\n" % device.name)
 		os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % device.relay).split()) 
-		if not device.random_powercuts:
-			pid_file.write("No random-powercut\n")
-		else:
+		if device.random_powercuts:
 			pid = os.spawnvp(os.P_NOWAIT, 'random-powercut.sh', ("random-powercut.sh %s %s %d" % (device.relay, RELAY_IP, RELAY_PORT)).split())
 			pid_file.write("%d\n" % pid)
