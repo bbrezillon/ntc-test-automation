@@ -25,10 +25,6 @@ args = parser.parse_args()
 
 power_cmd = "command_relay.py %s %d %d" % (args.RELAY_IP, args.RELAY_PORT, args.RELAY)
 
-server = smtplib.SMTP(smtp_credentials.server, smtp_credentials.port)
-server.ehlo()
-server.starttls()
-server.login(smtp_credentials.login, smtp_credentials.password)
 
 recipients = smtp_credentials.recipients
 me = smtp_credentials.mail
@@ -41,7 +37,12 @@ def send_mail(status, filename, line="", reboot=False):
 	msg['Subject'] = status + " on device %s" % filename
 	msg['To'] = ", ".join(recipients)
 	msg['From'] = me
+	server = smtplib.SMTP(smtp_credentials.server, smtp_credentials.port)
+	server.ehlo()
+	server.starttls()
+	server.login(smtp_credentials.login, smtp_credentials.password)
 	server.sendmail(me, recipients, msg.as_string())
+	server.quit()
 
 def timeout_detected(filename):
 	if not first_freeze:
@@ -109,5 +110,4 @@ while True:
 			break
 
 
-server.quit()
 sys.exit(0)
