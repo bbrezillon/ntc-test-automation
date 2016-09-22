@@ -60,8 +60,8 @@ first_freeze = True
 first_err = True
 
 board_rebooted_re = re.compile('Hit any key to stop autoboot')
-reboot_templates = ['send stop command failed']
-matching_templates = ['UBI.*err', 'Oops']
+reboot_templates = ['send stop command failed', 'Oops']
+matching_templates = ['UBI.*err']
 matching_res = []
 reboot_res = []
 for matching_template in matching_templates:
