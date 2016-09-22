@@ -88,6 +88,7 @@ for device in devices:
 	# Enter fastboot mode on board
 	serial = pexpect.spawn("picocom -b 115200 %s" % device.console, timeout=60)
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s off" % device.relay).split()) 
+	time.sleep(5)
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + "%s on" % device.relay).split()) 
 	serial.expect(["Hit any key to stop autoboot"])
 	serial.sendline('b')

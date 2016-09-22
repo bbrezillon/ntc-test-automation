@@ -46,6 +46,7 @@ def send_mail(status, filename, line="", reboot=False):
 
 def reboot_board():
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " off").split())
+	time.sleep(5)
 	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " on").split())
 
 def timeout_detected(filename):
