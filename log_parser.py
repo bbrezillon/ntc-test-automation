@@ -30,11 +30,11 @@ recipients = smtp_credentials.recipients
 me = smtp_credentials.mail
 
 def send_mail(status, filename, line="", reboot=False):
-	content = "A " + status + " occured on device %s:\n%s" % (filename, line)
+	content = "%s occured on device %s:\n%s" % (status, filename, line)
 	if reboot:
 		content += "\nThe device is being rebooted."
 	msg = MIMEText(content)
-	msg['Subject'] = status + " on device %s" % filename
+	msg['Subject'] = "%s on device %s" % (status, filename)
 	msg['To'] = ", ".join(recipients)
 	msg['From'] = me
 	server = smtplib.SMTP(smtp_credentials.server, smtp_credentials.port)
@@ -96,7 +96,7 @@ while True:
 		match = matching_re.search(line)
 		if match:
 			if first_err:
-				send_mail(args.FILE, line)
+				send_mail("error", args.FILE, line)
 			first_err = False
 			break
 	if match:
@@ -106,7 +106,7 @@ while True:
 		if match:
 			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " off").split())
 			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " on").split())
-			send_mail(args.FILE, line, True)
+			send_mail("error", args.FILE, line, True)
 			break
 
 
