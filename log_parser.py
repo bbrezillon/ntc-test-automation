@@ -104,8 +104,10 @@ while True:
 	for reboot_re in reboot_res:
 		match = reboot_re.search(line)
 		if match:
-			send_mail("error", args.FILE, line, True)
-			reboot_board()
+			if first_err:
+				send_mail("error", args.FILE, line, True)
+				reboot_board()
+			first_err = False
 			break
 
 
