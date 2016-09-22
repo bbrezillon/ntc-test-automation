@@ -44,11 +44,14 @@ def send_mail(status, filename, line="", reboot=False):
 	server.sendmail(me, recipients, msg.as_string())
 	server.quit()
 
+def reboot_board():
+	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " off").split())
+	os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " on").split())
+
 def timeout_detected(filename):
-	if not first_freeze:
-		return
 	if time.mktime(time.gmtime()) >= freeze_timeout + last_line:
-		send_mail("timeout of %ds" % freeze_timeout, filename)
+		send_mail("timeout of %ds" % freeze_timeout, filename, reboot=True)
+		reboot_board()
 
 #Timeout in milli seconds before serial is considered frozen
 timeout = 60 * 1000 * 10
@@ -56,7 +59,6 @@ timeout = 60 * 1000 * 10
 #Timeout in seconds before board is declared crashed
 freeze_timeout = 60 * 30
 last_line = time.mktime(time.gmtime())
-first_freeze = True
 first_err = True
 
 board_rebooted_re = re.compile('Hit any key to stop autoboot')
@@ -78,19 +80,16 @@ while True:
 	poll_ok = poll.poll(timeout)
 	if not poll_ok:
 		timeout_detected(args.FILE)
-		first_freeze = False
 		continue
 
 	try:
 		line = serial.readline()
 	except pexpect.TIMEOUT:
 		timeout_detected(args.FILE)
-		first_freeze = False
 		continue
 
 	last_line = time.mktime(time.gmtime())
 	if board_rebooted_re.search(line):
-		first_freeze = True
 		first_err = True
 	for matching_re in matching_res:
 		match = matching_re.search(line)
@@ -104,9 +103,8 @@ while True:
 	for reboot_re in reboot_res:
 		match = reboot_re.search(line)
 		if match:
-			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " off").split())
-			os.spawnvp(os.P_WAIT, 'command_relay.py', (power_cmd + " on").split())
 			send_mail("error", args.FILE, line, True)
+			reboot_board()
 			break
 
 
