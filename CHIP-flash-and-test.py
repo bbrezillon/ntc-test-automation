@@ -12,6 +12,9 @@ from ConfigParser import ConfigParser
 
 parser = argparse.ArgumentParser(description="Images builder and flasher for CHIPs")
 parser.add_argument("-c", "--conf-file", type=argparse.FileType("r"), default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "boards.conf"))
+parser.add_argument("-s", "--stop", dest='stop', action='store_true')
+parser.add_argument("-b", "--no-build", dest='build', action='store_false')
+parser.set_defaults(stop=False, build=True)
 
 RELAY_IP = "192.168.1.210"
 RELAY_PORT = 17494
@@ -79,9 +82,13 @@ if os.path.exists("pids"):
 else:
 	print "No pids file, continue..."
 
-# Create images
-print "Creating images..."
-os.spawnlp(os.P_WAIT, 'create-images.sh', 'create-images.sh')
+if args.stop:
+	sys.exit(0)
+
+if args.build:
+	# Create images
+	print "Creating images..."
+	os.spawnlp(os.P_WAIT, 'create-images.sh', 'create-images.sh')
 
 for device in devices:
 	print "Entering device %s bootloader..." % device.name
